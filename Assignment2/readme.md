@@ -1,5 +1,5 @@
-To run and test everything:
-make
-sudo insmod devChar.ko
-sudo ./test
-sudo rmmod devChar.ko
+To run and test everything: <br>
+make <br>
+sudo insmod devChar.ko <br>
+sudo ./test <br>
+sudo rmmod devChar.ko <br>
