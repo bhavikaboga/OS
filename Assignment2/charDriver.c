@@ -22,14 +22,14 @@ static char text[SIZE + 1] = {0};
 static int dev_open(struct inode *, struct file *);
 static int dev_release(struct inode *, struct file *);
 static ssize_t dev_read(struct file *, char *, size_t, loff_t *);
-static int dev_write(struct file *, const char *, size_t, loff_t *);
+static ssize_t dev_write(struct file *, const char *, size_t, loff_t *);
 
 static struct file_operations fops =
 {
    .open = dev_open,
    .release = dev_release,
    .read = dev_read,
-   .write = dev_write   
+   .write = dev_write,   
 };
 
 static int __init devChar_init(void)
@@ -91,11 +91,30 @@ static int dev_release(struct inode *inodep, struct file *filep){
 static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
 	int error_count = 0;
-	error_count = copy_to_user(buffer, text, bytesUsed);
+	int bytesRead = 0;
+	int i = 0;
+	
+	if(len <= bytesUsed)
+	{
+		error_count = copy_to_user(buffer, text, len);		
+		for(i = len; i < bytesUsed; i++)
+			text[i - len] = text[i];
+		text[i - len] = '\0';
+		bytesRead = len;
+		bytesUsed -= bytesRead;
+	}
+	else
+	{
+		error_count = copy_to_user(buffer, text, bytesUsed);
+		buffer[bytesUsed] = '\0';
+		bytesRead = bytesUsed;
+		bytesUsed = 0;
+		text[0] = '\0';
 
+	} 
 	if (error_count == 0)
 	{
-		printk(KERN_INFO "devChar: Sent %d characters to the user\n", bytesUsed);
+		printk(KERN_INFO "devChar: Sent %d characters to the user\n", bytesRead);
 		return (bytesUsed = 0);
 	}
 	else
@@ -107,8 +126,26 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-	sprintf(text, "%s(%zu letters)", buffer, len);
-	bytesUsed = strlen(text);
+	int bytesFree = SIZE - bytesUsed;
+	if(len < bytesFree)
+	{
+		sprintf(text, "%s(%zu letters)", buffer, len);
+		bytesUsed += len;
+	}
+	else
+	{
+		int i = 0;
+		while(i < bytesFree)
+		{
+			text[bytesUsed + i] = buffer[i];
+			i++;
+		}
+
+		bytesUsed += bytesFree;
+		text[bytesUsed] = '\0';
+
+	}
+	
 	printk(KERN_INFO "devChar: received %zu characters from the user\n", len);
 	return len;
 }
