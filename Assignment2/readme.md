@@ -7,7 +7,7 @@ Commands to run project: <br>
 The file `testDriver.c` is being used to test if the device driver is working properly. If you want to create your own testfile, name it as `testDriver.c` so it can work with the makefile and give it access to `/dev/devChar`. 
 
 
-To test the echoed input:
+To test the echoed input:<br>
 `make`<br>
 `sudo insmod charDriver.ko`<br>
 `sudo -i`<br>
