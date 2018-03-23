@@ -8,8 +8,8 @@ The file `testDriver.c` is being used to test if the device driver is working pr
 
 
 To test the echoed input:
-`make`
-`sudo insmod charDriver.ko`
-`sudo -i`
-`echo` <input> `> /dev/charDriver`
+`make`<br>
+`sudo insmod charDriver.ko`<br>
+`sudo -i`<br>
+`echo "test input" > /dev/charDriver`<br>
 `cat /dev/charDriver`
