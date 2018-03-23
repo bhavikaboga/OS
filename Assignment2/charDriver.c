@@ -94,58 +94,63 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 	int bytesRead = 0;
 	int i = 0;
 	
+	// If the entire text stored doesn't need to be read out
 	if(len <= bytesUsed)
 	{
+		// Reads out the length asked
 		error_count = copy_to_user(buffer, text, len);		
 		for(i = len; i < bytesUsed; i++)
 			text[i - len] = text[i];
-		text[i - len] = '\0';
+		
 		bytesRead = len;
+		text[i - len] = '\0';
+		// Updates the count of bytes stored
 		bytesUsed -= bytesRead;
 	}
 	else
 	{
+		// Reads the whole text so now bytes stored is set to zero
 		error_count = copy_to_user(buffer, text, bytesUsed);
 		buffer[bytesUsed] = '\0';
 		bytesRead = bytesUsed;
 		bytesUsed = 0;
 		text[0] = '\0';
-
 	} 
+
 	if (error_count == 0)
 	{
 		printk(KERN_INFO "devChar: Sent %d characters to the user\n", bytesRead);
-		return (bytesUsed = 0);
+		return (0);
 	}
 	else
 	{
-		printk(KERN_INFO "devChar: Failed to send %d characters to the user\n", bytesUsed);
-		return -EFAULT;			// return bad address message
+		printk(KERN_INFO "devChar: Failed to send %d characters to the user\n", error_count);
+		return -EFAULT;			// return bad address text
 	}
 }
 
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
 	int bytesFree = SIZE - bytesUsed;
+	int i = 0;
+
+	// Stores the buffer if text can hold it
 	if(len < bytesFree)
 	{
-		sprintf(text, "%s(%zu letters)", buffer, len);
+		sprintf(text + bytesUsed, "%s", buffer);
 		bytesUsed += len;
 	}
 	else
-	{
-		int i = 0;
-		while(i < bytesFree)
-		{
+	{	
+		// Can't store the whole write request, so only stored up to the available amount 	
+		for(i = 0; i < bytesFree; i++)
 			text[bytesUsed + i] = buffer[i];
-			i++;
-		}
 
 		bytesUsed += bytesFree;
 		text[bytesUsed] = '\0';
 
 	}
-	
+
 	printk(KERN_INFO "devChar: received %zu characters from the user\n", len);
 	return len;
 }

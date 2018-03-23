@@ -5,8 +5,35 @@
 #include <string.h>
 #include <unistd.h>
 
-#define BUFFER_LENGTH 1024
-static char receive[BUFFER_LENGTH];
+#define BUFFER_LENGTH 1024   
+
+int writeRequest(int fd, char* string)
+{
+   printf("Writing to device: \"%s\"\n", string);
+   int ret = write(fd, string, strlen(string));
+   if (ret < 0){
+      perror("Failed to write the message to the device.");
+      return errno;
+   }
+   return 0;
+}
+
+int readRequest(int fd, int n)
+{
+   char* buffer = malloc(sizeof(char) * BUFFER_LENGTH);
+   int ret = read(fd, buffer, n);
+
+   printf("Reading from device: \"%s\"\n", buffer);
+
+   if (ret < 0){
+      perror("Failed to read the message from the device.\n");
+      return errno;
+   }
+   
+   free(buffer);
+   buffer = NULL;
+   return 0;
+}
 
 int main(void)
 {
@@ -14,35 +41,18 @@ int main(void)
 	char stringToSend[BUFFER_LENGTH];
 	printf("Starting device test code example...\n");
 	fd = open("/dev/devChar", O_RDWR);
+	
 	if (fd < 0)
 	{
 		perror("Failed to open the device...");
 		return errno;
 	}
 
-	printf("Type in a short string to send to the kernel module:\n");
-	scanf("%[^\n]%*c", stringToSend);
-	printf("Writing message to the device [%s].\n", stringToSend);
-	ret = write(fd, stringToSend, strlen(stringToSend));
-
-	if (ret < 0)
-	{
-		perror("Failed to write the message to the device.");
-		return errno;	
-	}
-
-	printf("Press ENTER to read back from the device...\n");
-	getchar();
-
-	printf("Reading from the device...\n");
-	ret = read(fd, receive, BUFFER_LENGTH);
-	if (ret < 0)
-	{
-		perror("Failed to read the message from the device.");
-		return errno;
-	}
-
-	printf("The received message is: [%s]\n", receive); 
+	writeRequest(fd, "COP4600:"); 
+	readRequest(fd, 4); // Should print "COP4"
+	writeRequest(fd, "OperatingSystems");
+	readRequest(fd, 7); // Should print "600:Ope"
+	readRequest(fd, 15); // Should print "ratingSystems"
 
 	printf("End of the program\n");
 
