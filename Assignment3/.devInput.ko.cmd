@@ -1,1 +1,0 @@
-cmd_/home/bhavika/OS/Assignment3/devInput.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/bhavika/OS/Assignment3/devInput.ko /home/bhavika/OS/Assignment3/devInput.o /home/bhavika/OS/Assignment3/devInput.mod.o
