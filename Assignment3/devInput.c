@@ -8,7 +8,7 @@
 #include <linux/mutex.h>
 
 #define DEVICE_NAME "devInput"
-#define CLASS_NAME  "dev"
+#define CLASS_NAME  "devI"
 #define SIZE 1024
 
 MODULE_LICENSE("GPL");
@@ -17,8 +17,7 @@ static struct device* devCharDevice = NULL;
 static struct class*  devCharClass  = NULL;
 
 static int majorNumber;
-static int bytesUsed = 0;
-char text[SIZE + 1] = {0};
+extern char text[SIZE + 1] = {0};
 EXPORT_SYMBOL(text);
 static DEFINE_MUTEX(inputMutex);
 
@@ -101,6 +100,7 @@ static int dev_release(struct inode *inodep, struct file *filep){
 
 static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
+	int bytesUsed = strlen(text);
 	int bytesFree = SIZE - bytesUsed;
 	int i = 0;
 

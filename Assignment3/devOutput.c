@@ -8,7 +8,7 @@
 #include <linux/mutex.h>
 
 #define DEVICE_NAME "devOutput"
-#define CLASS_NAME  "dev"
+#define CLASS_NAME  "devO"
 #define SIZE 1024
 
 MODULE_LICENSE("GPL");
@@ -16,10 +16,9 @@ MODULE_LICENSE("GPL");
 static struct device* devCharDevice = NULL;
 static struct class*  devCharClass  = NULL;
 
-static int majorNumber;
-static int bytesUsed = 0;
-char text[SIZE + 1] = {0};
-EXPORT_SYMBOL(text);
+static int majorNumber;;
+extern char text[SIZE + 1];
+
 static DEFINE_MUTEX(ouputMutex);
 
 static int dev_open(struct inode *, struct file *);
@@ -102,9 +101,7 @@ static int dev_release(struct inode *inodep, struct file *filep){
 
 static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
 {
-	int error_count = 0;
-	int bytesRead = 0;
-	int i = 0;
+	int bytesUsed = strlen(text), error_count = 0, bytesRead = 0, i = 0;
 	
 	// If the entire text stored doesn't need to be read out
 	if(len <= bytesUsed)
