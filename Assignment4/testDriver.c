@@ -56,9 +56,9 @@ int main(void)
 		return errno;
 	}
 
-	writeRequest(fi, "COP0UCF0:"); 
+	writeRequest(fi, "COP0UCF: Op"); 
 	readRequest(fo, 4); // Should print "COP0"
-	writeRequest(fi, "OperatingSystems");
+	writeRequest(fi, "eratingSystems");
 	readRequest(fo, 7); // Should print "Undefea"
 	readRequest(fo, 50); // Should print "ted 2018 National Champions UCF0:OperatingSystems"
 

@@ -103,19 +103,49 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 {
 	int bytesUsed = strlen(text);
 	int bytesFree = SIZE - bytesUsed;
-	int i = 0, minLength = 0;
+	int i = 0, minLength = 0, marker = 0, start = 0;
+	int written = 0;
 	int bufferSize = strlen(buffer);
 	char replacementString[REPL_STRING_SIZE + 1];
 	strcpy(replacementString, "Undefeated 2018 National Champions UCF");
+
+	if(text[bytesUsed - 1] == 'U') marker = 1;
+	else if(text[bytesUsed - 2] == 'U' && text[bytesUsed - 1] == 'C') marker = 2;
+
+	// Deals with UCF being broken up in different input strings
+	if(marker != 0)
+	{
+		text[bytesUsed] = '\0';
+		text[bytesUsed - 1] = '\0';
+
+		if(marker == 1 && buffer[0] == 'C' && buffer[1] == 'F')
+		{
+			start++;
+		}
+
+		else if(marker == 2 && buffer[0] == 'F')
+		{
+			text[bytesUsed - 2] = '\0';	
+			bufferSize--;	
+		}
+		start++;
+		bufferSize--;
+		bytesUsed = strlen(text);
+		written = sprintf(text + bytesUsed, "%s", replacementString);
+
+		if(written > 0) 
+			bytesUsed += written;
+		bytesFree = SIZE - bytesUsed;
+	}
 
 	if(bufferSize < bytesFree) 
 		minLength = bufferSize;
 	else
 		minLength = bytesFree;
 
-	for (i = 0; i < minLength; i++)
+	// Inserts the buffer into memory, replacing UCF whenever encountered
+	for (i = start; i < minLength; i++)
 	{
-		int written = 0;
 		if (i + 1 < bufferSize && i + 2 < bufferSize && buffer[i] == 'U' && buffer[i+1] == 'C' && buffer[i+2] == 'F')
 		{	// found
 			printk(KERN_INFO "UCF detected\n");
