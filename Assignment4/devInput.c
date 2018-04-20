@@ -7,35 +7,30 @@
 #include <asm/uaccess.h>
 #include <linux/mutex.h>
 
-#define DEVICE_NAME "devOutput"
-#define CLASS_NAME  "devO"
+#define DEVICE_NAME "devInput"
+#define CLASS_NAME  "devI"
 #define SIZE 1024
-// new
-#define REPL_STRING_SIZE 41
-//
+#define REPL_STRING_SIZE 38
 
 MODULE_LICENSE("GPL");
 
 static struct device* devCharDevice = NULL;
 static struct class*  devCharClass  = NULL;
 
-static int majorNumber;;
-extern char text[SIZE + 1];
-// new
-extern char replacementString[REPL_STRING_SIZE+1] = "Undefeated 2018 National Champions UCF";
-//
-
-static DEFINE_MUTEX(ouputMutex);
+static int majorNumber;
+extern char text[SIZE + 1] = {0};
+EXPORT_SYMBOL(text);
+static DEFINE_MUTEX(inputMutex);
 
 static int dev_open(struct inode *, struct file *);
 static int dev_release(struct inode *, struct file *);
-static ssize_t dev_read(struct file *, char *, size_t, loff_t *);
+static ssize_t dev_write(struct file *, const char *, size_t, loff_t *);
 
 static struct file_operations fops =
 {
    .open = dev_open,
    .release = dev_release,
-   .read = dev_read,   
+   .write = dev_write,   
 };
 
 static int __init devChar_init(void)
@@ -71,7 +66,7 @@ static int __init devChar_init(void)
 		return PTR_ERR(devCharDevice);
 	}
 
-	mutex_init(&ouputMutex);
+	mutex_init(&inputMutex);
 	printk(KERN_INFO "devChar: device created successfully\n");
 	return 0;
 }
@@ -82,13 +77,13 @@ static void __exit devChar_exit(void)
 	class_unregister(devCharClass);
 	class_destroy(devCharClass);
 	unregister_chrdev(majorNumber, DEVICE_NAME);
-	mutex_destroy(&ouputMutex);
+	mutex_unlock(&inputMutex);
 	printk(KERN_INFO "devChar: Exiting\n");
 }
 
 static int dev_open(struct inode *inoded, struct file *filep)
 {
-	if(mutex_trylock(&ouputMutex))
+	if(mutex_trylock(&inputMutex))
 	{
 		printk(KERN_INFO "Device is opened\n");
    		return 0;
@@ -100,58 +95,41 @@ static int dev_open(struct inode *inoded, struct file *filep)
 }
 
 static int dev_release(struct inode *inodep, struct file *filep){
-	mutex_unlock(&ouputMutex);
-   	printk(KERN_INFO "Device is closed\n");
-   	return 0;
+   printk(KERN_INFO "Device is closed\n");
+   return 0;
 }
 
-static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *offset)
+static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, loff_t *offset)
 {
-	int bytesUsed = strlen(text), error_count = 0, bytesRead = 0, i = 0;
-	
-	// If the entire text stored doesn't need to be read out
-	if(len <= bytesUsed)
-	{
-		// Reads out the length asked
-		error_count = copy_to_user(buffer, text, len);		
-		for(i = len; i < bytesUsed; i++)
-			text[i - len] = text[i];
+	int bytesUsed = strlen(text);
+	int bytesFree = SIZE - bytesUsed;
+	int i = 0, minLength = 0;
+	int bufferSize = strlen(buffer);
+	char replacementString[REPL_STRING_SIZE + 1];
+	strcpy(replacementString, "Undefeated 2018 National Champions UCF");
 
-		// ---------------- new -----------------
-		// search buffer for UCF
-		for (i = 0; i < bytesUsed-2; i++)
-			if (text[i] == 'U' && text[i+1] == 'C' && text[i+2] == 'F')
-			{	// found
-				printk(KERN_INFO "UCF detected\n");
-				// write replacementString to memory
-				//  pick up search at i+2  
-			}
-		
-		bytesRead = len;
-		text[i - len] = '\0';
-		// Updates the count of bytes stored
-		bytesUsed -= bytesRead;
-	}
+	if(bufferSize < bytesFree) 
+		minLength = bufferSize;
 	else
-	{
-		// Reads the whole text so now bytes stored is set to zero
-		error_count = copy_to_user(buffer, text, bytesUsed);
-		buffer[bytesUsed] = '\0';
-		bytesRead = bytesUsed;
-		bytesUsed = 0;
-		text[0] = '\0';
-	} 
+		minLength = bytesFree;
 
-	if (error_count == 0)
+	for (i = 0; i < minLength; i++)
 	{
-		printk(KERN_INFO "devChar: Sent %d characters to the user\n", bytesRead);
-		return (0);
+		int written = 0;
+		if (i + 1 < bufferSize && i + 2 < bufferSize && buffer[i] == 'U' && buffer[i+1] == 'C' && buffer[i+2] == 'F')
+		{	// found
+			printk(KERN_INFO "UCF detected\n");
+			i = i + 3;
+			written = sprintf(text + bytesUsed, "%s", replacementString);
+			if(written > 0) bytesUsed += written;
+		}
+
+		text[bytesUsed] = buffer[i];
+		bytesUsed++;
 	}
-	else
-	{
-		printk(KERN_INFO "devChar: Failed to send %d characters to the user\n", error_count);
-		return -EFAULT;			// return bad address text
-	}
+
+	printk(KERN_INFO "devChar: received %zu characters from the user\n", len);
+	return len;
 }
 
 module_init(devChar_init);

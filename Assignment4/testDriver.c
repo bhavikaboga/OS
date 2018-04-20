@@ -56,11 +56,11 @@ int main(void)
 		return errno;
 	}
 
-	writeRequest(fi, "COUCF00:"); 
-	readRequest(fo, 4); // Should print "COP4"
+	writeRequest(fi, "COP0UCF0:"); 
+	readRequest(fo, 4); // Should print "COP0"
 	writeRequest(fi, "OperatingSystems");
-	readRequest(fo, 7); // Should print "600:Ope"
-	readRequest(fo, 15); // Should print "ratingSystems"
+	readRequest(fo, 7); // Should print "Undefea"
+	readRequest(fo, 50); // Should print "ted 2018 National Champions UCF0:OperatingSystems"
 
 	printf("End of the program\n");
 
